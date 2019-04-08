@@ -2,9 +2,7 @@ import time
 
 from django.conf import settings
 from django.db.models import Q
-from huey.contrib.djhuey import db_periodic_task, lock_task
 
-from Harvest.huey_scheduler import Crontab, IntervalSeconds
 from Harvest.utils import get_logger
 from monitoring.decorators import update_component_status
 from monitoring.models import ComponentStatus, LogEntry
@@ -13,6 +11,7 @@ from plugins.redacted.exceptions import RedactedTorrentNotFoundException
 from plugins.redacted.tracker import RedactedTrackerPlugin
 from plugins.redacted_archiver import log_scraper
 from plugins.redacted_archiver.models import RedactedArchiverState
+from task_queue.task_queue import TaskQueue
 from torrents.add_torrent import fetch_torrent
 from torrents.models import Realm, Torrent
 from trackers.registry import TrackerRegistry
@@ -20,8 +19,7 @@ from trackers.registry import TrackerRegistry
 logger = get_logger(__name__)
 
 
-@db_periodic_task(IntervalSeconds(settings.REDACTED_ARCHIVER_LOG_FOLLOW_INTERVAL))
-@lock_task('redacted_archiver_log_follow')
+@TaskQueue.periodic_task(settings.REDACTED_ARCHIVER_LOG_FOLLOW_INTERVAL)
 @update_component_status(
     'redacted_archiver_log_follow',
     error_message='Redacted archiver log follow crashed.',
@@ -35,8 +33,7 @@ def redacted_archiver_log_follow():
     log_scraper.scrape_log(client)
 
 
-@db_periodic_task(IntervalSeconds(settings.REDACTED_ARCHIVER_FETCH_MISSING_INTERVAL))
-@lock_task('redacted_archiver_fetch_missing')
+@TaskQueue.periodic_task(settings.REDACTED_ARCHIVER_FETCH_MISSING_INTERVAL)
 @update_component_status(
     'redacted_archiver_fetch_missing',
     error_message='Redacted archiver fetch missing crashed.',
@@ -98,8 +95,7 @@ def redacted_archiver_fetch_missing():
     )
 
 
-@db_periodic_task(Crontab())
-@lock_task('redacted_archive_download_torrent')
+# @TaskQueue.periodic_task(60)
 def redacted_archive_download_torrent():
     state = RedactedArchiverState.objects.get()
     if not state.is_download_enabled:
