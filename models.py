@@ -3,9 +3,8 @@ from django.db import models
 
 class RedactedArchiverState(models.Model):
     is_fetch_missing_enabled = models.BooleanField(default=False)
-    is_metadata_enabled = models.BooleanField(default=False)
+    is_refresh_metadata_enabled = models.BooleanField(default=False)
     is_log_follow_enabled = models.BooleanField(default=False)
-    is_download_enabled = models.BooleanField(default=False)
     last_meta_tracker_id = models.BigIntegerField(default=0)
 
 
